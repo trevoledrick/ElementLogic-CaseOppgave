@@ -13,7 +13,38 @@ public class WorkdayCalendar : IWorkdayCalculator
 
     public DateTime AddWorkdays(DateTime start, double workdays)
     {
-        throw new NotImplementedException();
+        if (workdays == 0)
+        {
+            return NormalizeForward(start);
+        }
+
+        int direction = workdays > 0 ? 1 : -1;
+        double absoluteWorkDays = Math.Abs(workdays);
+
+        int wholeDays = (int)Math.Abs(workdays);
+        double fractionalPart = absoluteWorkDays - wholeDays;
+
+        DateTime current = direction > 0 ? NormalizeForward(start) : NormalizeBackward(start);
+
+        for (int i = 0; i < wholeDays; i++)
+        {
+            if (direction > 0)
+            {
+                current = MoveToNextWorkday(current.AddDays(1));
+            }
+            else
+            {
+                current = MoveToPreviousWorkday(current.AddDays(-1));
+            }
+        }
+
+        if (fractionalPart == 0)
+        {
+            return current;
+        }
+        
+        // Fraksjonsdelen (0.5, 0.25 osv.) implementerer vi i morgen den 20.11.2025
+        throw new NotImplementedException("Fractional workday handling not implemented yet."); 
     }
 
     private bool IsWeekend(DateTime date)
