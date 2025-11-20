@@ -19,10 +19,10 @@ public class WorkdayCalendar : IWorkdayCalculator
         }
 
         int direction = workdays > 0 ? 1 : -1;
-        double absoluteWorkDays = Math.Abs(workdays);
+        double absoluteWorkdays = Math.Abs(workdays);
 
-        int wholeDays = (int)Math.Abs(workdays);
-        double fractionalPart = absoluteWorkDays - wholeDays;
+        int wholeDays = (int)Math.Truncate(absoluteWorkdays);
+        double fractionalPart = absoluteWorkdays - wholeDays;
 
         DateTime current = direction > 0 ? NormalizeForward(start) : NormalizeBackward(start);
 
@@ -43,8 +43,19 @@ public class WorkdayCalendar : IWorkdayCalculator
             return current;
         }
         
-        // Fraksjonsdelen (0.5, 0.25 osv.) implementerer vi i morgen den 20.11.2025
-        throw new NotImplementedException("Fractional workday handling not implemented yet."); 
+        var fractionalDuration = TimeSpan.FromTicks(
+            (long)(_workdaySettings.WorkdayLength.Ticks * fractionalPart));
+
+        if (direction > 0)
+        {
+            current = AddWorkingTimeForward(current, fractionalDuration);
+        }
+        else
+        {
+            current = AddWorkingTimeBackward(current, fractionalDuration);
+        }
+
+        return current;
     }
 
     private bool IsWeekend(DateTime date)
@@ -127,5 +138,67 @@ public class WorkdayCalendar : IWorkdayCalculator
         }
 
         return dateTime;
+    }
+
+    private DateTime AddWorkingTimeForward(DateTime dateTime, TimeSpan duration)
+    {
+        var remaining = duration;
+        var current = dateTime;
+
+        while (remaining > TimeSpan.Zero)
+        {
+            var workdayEndTime = current.Date + _workdaySettings.WorkdayEnd;
+            var availableToday = workdayEndTime - current;
+
+            if (availableToday <= TimeSpan.Zero)
+            {
+                var nextWorkDate = MoveToNextWorkday(current.Date.AddDays(1)).Date;
+                current = nextWorkDate + _workdaySettings.WorkdayStart;
+                continue;
+            }
+
+            if (remaining <= availableToday)
+            {
+                current = current + remaining;
+                break;
+            }
+            
+            remaining -= availableToday;
+            var nextDay = MoveToNextWorkday(current.Date.AddDays(1)).Date;
+            current = nextDay + _workdaySettings.WorkdayStart;
+        }
+
+        return current;
+    }
+
+    private DateTime AddWorkingTimeBackward(DateTime dateTime, TimeSpan duration)
+    {
+        var remaining = duration;
+        var current = dateTime;
+
+        while (remaining > TimeSpan.Zero)
+        {
+            var workdayStartTime = current.Date + _workdaySettings.WorkdayStart;
+            var availableToday = current - workdayStartTime;
+
+            if (availableToday <= TimeSpan.Zero)
+            {
+                var previousWorkDate = MoveToPreviousWorkday(current.Date.AddDays(-1)).Date;
+                current = previousWorkDate + _workdaySettings.WorkdayEnd;
+                continue;
+            }
+
+            if (remaining <= availableToday)
+            {
+                current = current - remaining;
+                break;
+            }
+            
+            remaining -= availableToday;
+            var previousDay = MoveToPreviousWorkday(current.Date.AddDays(-1)).Date;
+            current = previousDay + _workdaySettings.WorkdayEnd;
+        }
+
+        return current;
     }
 }
