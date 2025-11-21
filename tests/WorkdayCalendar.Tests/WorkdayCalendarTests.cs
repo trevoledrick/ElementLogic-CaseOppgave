@@ -97,6 +97,60 @@ namespace WorkdayCalendar.Tests
             Assert.Equal(expected.Minute, result.Minute);
         }
 
+        [Fact]
+        public void AddWorkdays_WhenAddingZeroDays_NormalizesToWorkdayStart()
+        {
+            // Arrange
+            var calendar = CreateCalendar();
+            var start = new DateTime(2004, 5, 24, 6, 30, 0); // May 24, 2004, 6:30 AM
+
+            // Act
+            var result = calendar.AddWorkdays(start, 0);
+
+            // Assert
+            var expected = new DateTime(2004, 5, 24, 8, 0, 0); // May 24, 2004, 8:00 AM
+            
+            Assert.Equal(expected.Date, result.Date);
+            Assert.Equal(expected.Hour, result.Hour);
+            Assert.Equal(expected.Minute, result.Minute);
+        }
+
+        [Fact]
+        public void AddWorkdays_WhenStartingOnWeekend_MovesToNextWorkdayStart()
+        {
+            // Arrange
+            var calendar = CreateCalendar();
+            var start = new DateTime(2004, 5, 22, 10, 0, 0); // May 22, 2004, Saturday
+
+            // Act
+            var result = calendar.AddWorkdays(start, 0);
+
+            // Assert
+            var expected = new DateTime(2004, 5, 24, 8, 0, 0); // May 24, 2004, Monday
+            
+            Assert.Equal(expected.Date, result.Date);
+            Assert.Equal(expected.Hour, result.Hour);
+            Assert.Equal(expected.Minute, result.Minute);
+        }
+
+        [Fact]
+        public void AddWorkdays_WhenStartingOnHoliday_MovesToNextWorkdayStart()
+        {
+            // Arrange
+            var calendar = CreateCalendar();
+            var start = new DateTime(2004, 5, 17, 10, 0, 0); // May 17, 2004, Holiday
+
+            // Act
+            var result = calendar.AddWorkdays(start, 0);
+
+            // Assert
+            var expected = new DateTime(2004, 5, 18, 8, 0, 0); // May 18, 2004, Tuesday
+            
+            Assert.Equal(expected.Date, result.Date);
+            Assert.Equal(expected.Hour, result.Hour);
+            Assert.Equal(expected.Minute, result.Minute);
+        }
+
         private WorkdayCalendar CreateCalendar()
         {
             var settings = new WorkdaySettings(TimeSpan.FromHours(8), TimeSpan.FromHours(16));
